@@ -23,53 +23,33 @@ import os
 import bisect
 from collections import deque
 from time import sleep
-from functools import wraps
 
 idcode = 0
-
-
-def singleton(class_):
-    instances = {}
-
-    @wraps(class_)
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-
-    return getinstance
+patient = None
+user_input = None
 
 
 class Patient:
-    def __init__(self, idcode, firstname, middlename, lastname, age, urgency):
-        self.idcode = int(idcode)
+    def __init__(self, idcode_, firstname, middlename, lastname, age, urgency):
+        self.idcode = int(idcode_)
         self.firstname = firstname
         self.middlename = middlename
         self.lastname = lastname
         self.age = int(age)
         self.urgency = int(urgency)
 
-    def __lt__(self, other):
+    def __lt__(self, other):  # Default list sorter by urgency.
         return self.urgency < other.urgency
 
-    def __iter__(self):
-        return self
 
-    def __next__(self):
-        if parameter == self.age or self.idcode or self.urgency or self.lastname or self.firstname or self.middlename:
-            raise StopIteration
-        return parameter
-
-
-@singleton
 class WaitingList:
 
     def __init__(self):
         self.waitinglist = deque()
 
-    def enqueue(self):
-        global idcode
-        global patient
+    def enqueue(self):  # Add new patient
+        global idcode  # Store as global variable to ensure unique value for each patient.
+        global patient  # Object 'patient' is used in method 'bribe()' and needs to be defined globally.
         print("Patient information sheet!\n")
         idcode += 1
         first_name = input("First name: ")
@@ -97,7 +77,7 @@ class WaitingList:
         sleep(1)
         return bisect.insort_left(self.waitinglist, patient)
 
-    def dequeue(self):
+    def dequeue(self):  # Remove next patient from waitinglist
         if len(self.waitinglist) == 0:
             return
         else:
@@ -106,24 +86,28 @@ class WaitingList:
             return self.waitinglist.pop()
 
     def bribe(self):
+        if len(waitinglist) == 0:  # Check if there are any patients, return to main menu if none.
+            main()
+
         os.system('cls||clear')
-        if waitinglist.__len__() == 0:
-            main()
         bribe_list = []
-        global parameter
-        print(f"You currently have {waitinglist.__len__()} patients waiting for you.\n")
-        waitinglist.__str__()
-        parameter = input("\nWho do you wish to accept next, Doctor? ")
+        global user_input  # Variable user_input is used in class 'Patient' iterator and has to be globally accessible.
 
-        if parameter.isnumeric():
-            parameter = int(parameter)
-        elif parameter == '':
+        print(f"You currently have {len(waitinglist)} patients waiting for you.\n")
+        waitinglist.__str__()
+
+        user_input = input("\nWho do you wish to accept next, Doctor? ")
+
+        if user_input.isnumeric():
+            user_input = int(user_input)  # Redefine numerical inputs as integers.
+        elif user_input == '':  # In case of no data input, return to main menu.
             main()
 
-        for element in vars(patient).keys():
-            temp_bribe_list = [patient for patient in self.waitinglist if parameter == getattr(patient, element)]
-            [bribe_list.append(item) for item in temp_bribe_list if item not in bribe_list]
-        if len(bribe_list) == 1:
+        for element in vars(patient).keys():  # Iterate through waitinglist by attributes and check for user input.
+            temp_bribe_list = [patient_ for patient_ in self.waitinglist if user_input == getattr(patient_, element)]
+            [bribe_list.append(item) for item in temp_bribe_list if item not in bribe_list]  # Avoid repetitions
+
+        if len(bribe_list) == 1:  # This 'if' block defines output of the bribe() method.
             print(f"Patient {bribe_list[0].idcode:05d} has been removed from the list")
             self.waitinglist.remove(bribe_list[0])
             sleep(2)
@@ -138,44 +122,47 @@ class WaitingList:
             sleep(3)
             waitinglist.bribe()
 
-    def isempty(self):
+    def isempty(self):  # Empty the waitinglist.
         print("All the patients were asked to leave, Doctor!")
         sleep(1)
         self.waitinglist.clear()
         main()
 
-    def universal_sorter(self, variable, bool):
+    def universal_sorter(self, attribute, reverse):  # Sort the waitinglist.
         self.waitinglist = deque(sorted(self.waitinglist,
-                                        key=lambda patient: getattr(patient, variable), reverse=bool))
+                                        key=lambda patient_: getattr(patient_, attribute), reverse=reverse))
 
-    def __str__(self):
-        for patient in reversed(self.waitinglist):
-            print(f"ID:{patient.idcode:05d}  Urgency: {patient.urgency}  Age: {patient.age}  "
-                  f"Name: {patient.firstname} {patient.middlename} {patient.lastname}")
+    def __str__(self):  # print Patient objects in waitinglist.
+        for patient_ in reversed(self.waitinglist):
+            print(f"ID:{patient_.idcode:05d}  Urgency: {patient_.urgency}  Age: {patient_.age}  "
+                  f"Name: {patient_.firstname} {patient_.middlename} {patient_.lastname}")
 
     def __len__(self):
         return len(self.waitinglist)
 
 
 def re_order_menu():
-    print(f"You currently have {waitinglist.__len__()} patients waiting for you.\n")
+    if len(waitinglist) == 0:  # Check if there are any patients, return to main menu if none.
+        main()
+
+    print(f"You currently have {len(waitinglist)} patients waiting for you.\n")  # Reorder menu prints.
     waitinglist.__str__()
     print("\nHow would you like to re-order the list, Doctor? ")
     print("\n1.Clear the room \n2.Sort by Urgency \n3.Sort by Urgency reversed \n4.Sort by ID \n5.Sort by ID reversed "
           "\n6.Sort by First name \n7.Sort by Middle name \n8.Sort by Last name \n9.Sort by Age youngest first "
           "\n10.Sort by Age oldest first \n11.Back")
-    while True:
+
+    while True:  # Safenet for execution integrity in case of invalid input data.
         try:
-            reorder_menu_select = int(input("\nYour choice: "))
-            if reorder_menu_select in range(1, 12):
+            value = int(input("\nYour choice: "))
+            if value in range(1, 12):
                 break
         except ValueError:
             print("\nPlease select a number from 1 to 11")
         else:
-            print("\nPlease use a number from 1 to 11!")
+            print("\nPlease select a number from 1 to 11")
 
-    user_options = {
-        1: waitinglist.isempty,
+    user_command = {  # Dictionary of user commands.
         2: ["urgency", False],
         3: ["urgency", True],
         4: ["idcode", True],
@@ -184,37 +171,37 @@ def re_order_menu():
         7: ["middlename", True],
         8: ["lastname", True],
         9: ["age", True],
-        10: ["age", False],
-        11: main
+        10: ["age", False]
     }
-    if reorder_menu_select == 1:
+    if value == 1:  # This 'if' block is to execute user command
         waitinglist.isempty()
 
-    elif reorder_menu_select == 11:
+    elif value == 11:
         main()
     else:
-        os.system('cls||clear')
-        waitinglist.universal_sorter(user_options[reorder_menu_select][0], user_options[reorder_menu_select][1])
-        re_order_menu()
+        os.system('cls||clear')  # Call: object.method(arg1, arg2) where arg1 and arg2 are defined in dictionary.
+        waitinglist.universal_sorter(user_command[value][0], user_command[value][1])
+        re_order_menu()  # Update prints and reset value, only way out of menu is by user command.
 
 
 def main():
-    os.system('cls||clear')
-    print(f"Welcome back, Doctor! \n\nYou currently have {waitinglist.__len__()} patients waiting for you.")
+    os.system('cls||clear')  # Main menu prints
+    print(f"Welcome back, Doctor! \n\nYou currently have {len(waitinglist)} patients waiting for you.")
     waitinglist.__str__()
     print("\n\nWhat would you like to do? \n1.Add patient "
           "\n2.Take the next patient in list \n3.Re-order the list \n4.Accept a bribe \n5.Exit")
-    while True:
+
+    while True:  # Safenet for execution integrity in case of invalid input data.
         try:
-            main_menu_select = int(input("\nYour choice: "))
-            if main_menu_select in range(1, 6):
+            value = int(input("\nYour choice: "))
+            if value in range(1, 6):
                 break
         except ValueError:
             print("\nPlease use a number from 1 to 5!")
         else:
             print("\nPlease use a number from 1 to 5!")
 
-    user_options = {
+    user_command = {  # Dictionary of user commands.
         1: waitinglist.enqueue,
         2: waitinglist.dequeue,
         3: re_order_menu,
@@ -222,15 +209,10 @@ def main():
         5: exit
     }
     os.system('cls||clear')
-    user_options[main_menu_select]()
-    main()
-
-
-def start_program():
-    global waitinglist
-    waitinglist = WaitingList()
-    main()
+    user_command[value]()  # Execute user command
+    main()  # Update prints and reset value, only way out of code execution is by exit command
 
 
 if __name__ == '__main__':
-    start_program()
+    waitinglist = WaitingList()
+    main()
